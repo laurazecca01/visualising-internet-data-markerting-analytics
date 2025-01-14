@@ -1,4 +1,4 @@
-# News Article Analysis and SEO Recommendation System 🌐
+# News Article websites Analysis 🌐
 
 This project, developed in collaboration with Ipsos, analyzes news articles across multiple sources to provide SEO recommendations and visualize content relationships. The system combines web scraping, sentiment analysis, and network visualization to deliver insights about content patterns and relationships between news sources.
 It was a group project, but the things I worked on individually were:
