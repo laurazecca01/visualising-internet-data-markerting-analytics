@@ -7,6 +7,7 @@ It was a group project, but the things I worked on individually were:
 - Interactive dashboard for content analysis in python using Dash with:
   - temporal analysis of content trends
   - seo keyword reccomendations
+
 Furthermore my teammates worked on a visualisation using tableau, the data cleaning and the k-means clustering.
 
 ## Key Components
