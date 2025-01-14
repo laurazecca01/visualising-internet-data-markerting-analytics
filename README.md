@@ -49,33 +49,17 @@ Built using Beautiful Soup for web scraping and NLTK for text analysis, the syst
 ```
 project/
 │
-├── data/
-│   ├── scraped_articles/
-│   └── processed_data/
+├── Keywords dashboard/
+│   ├── assets (css styling)
+│   └── Dashboard.ipynb
 │
-├── src/
-│   ├── scraping/
-│   ├── analysis/
-│   ├── visualization/
-│   └── dashboard/
+├── Network visualisation/
+│   ├── sentiment+network code.ipynb
+│   ├── network.html (visualisation)
 │
-├── notebooks/
-│   └── analysis_notebooks/
+├── Area chart.twbx (Tableau visualisation)
 │
-└── results/
-    ├── visualizations/
-    └── reports/
+└── Presentation pdf
 ```
 
-## Future Improvements
-- Implement real-time article scraping
-- Add more advanced sentiment analysis models
-- Enhance visualization interactivity
-- Expand keyword recommendation algorithm
-- Add automated reporting features
 
-## Contributing
-This project was developed as part of a collaboration with Ipsos. For any suggestions or improvements, please open an issue or submit a pull request.
-
-## License
-[Specify your license here]
