@@ -1,0 +1,51 @@
+body {
+    background-color: #121212;
+    font-family: 'PP Mori', sans-serif;
+    color: #FFFFFF;
+}
+
+.title {
+    color: #8EA8F2;
+    top: 50px;
+    padding-left: 40px;
+    font-size: 50px;
+    font-family: 'PP Mori';
+}
+
+.subtitle {
+    color: #c2baf6;
+    font-size: 14px;
+    padding-left: 40px;
+    font-weight: regular;
+}
+
+
+.Graph {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    border-radius: 8px;
+    font-family: 'PP Mori';
+}
+
+.Label {
+    color: #121111;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+Select-input {
+    color: #000000;
+}
+
+.label-dropdown {
+    color: #FFFFFF;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+

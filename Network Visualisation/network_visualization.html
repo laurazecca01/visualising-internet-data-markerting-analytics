@@ -1,0 +1,827 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750;
+                 background-color: #181717;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 750;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="ok.co.uk">ok.co.uk</option>
+                                
+                                    <option value="cheshire-live.co.uk">cheshire-live.co.uk</option>
+                                
+                                    <option value="thecourier.co.uk">thecourier.co.uk</option>
+                                
+                                    <option value="lincolnshirelive.co.uk">lincolnshirelive.co.uk</option>
+                                
+                                    <option value="huffingtonpost.co.uk">huffingtonpost.co.uk</option>
+                                
+                                    <option value="rsvplive.ie">rsvplive.ie</option>
+                                
+                                    <option value="dublinlive.ie">dublinlive.ie</option>
+                                
+                                    <option value="corkbeo.ie">corkbeo.ie</option>
+                                
+                                    <option value="cityam.com">cityam.com</option>
+                                
+                                    <option value="pressandjournal.co.uk">pressandjournal.co.uk</option>
+                                
+                                    <option value="sussexlive.co.uk">sussexlive.co.uk</option>
+                                
+                                    <option value="carmagazine.co.uk">carmagazine.co.uk</option>
+                                
+                                    <option value="hampshirelive.news">hampshirelive.news</option>
+                                
+                                    <option value="hertfordshiremercury.co.uk">hertfordshiremercury.co.uk</option>
+                                
+                                    <option value="empireonline.com">empireonline.com</option>
+                                
+                                    <option value="business-live.co.uk">business-live.co.uk</option>
+                                
+                                    <option value="stylist.co.uk">stylist.co.uk</option>
+                                
+                                    <option value="getreading.co.uk">getreading.co.uk</option>
+                                
+                                    <option value="football.london">football.london</option>
+                                
+                                    <option value="bedfordshirelive.co.uk">bedfordshirelive.co.uk</option>
+                                
+                                    <option value="mytimesplus.co.uk">mytimesplus.co.uk</option>
+                                
+                                    <option value="huffpost.com">huffpost.com</option>
+                                
+                                    <option value="northantslive.news">northantslive.news</option>
+                                
+                                    <option value="graziadaily.co.uk">graziadaily.co.uk</option>
+                                
+                                    <option value="staffordshire-live.co.uk">staffordshire-live.co.uk</option>
+                                
+                                    <option value="driving.co.uk">driving.co.uk</option>
+                                
+                                    <option value="ukholidaysinthesun.co.uk">ukholidaysinthesun.co.uk</option>
+                                
+                                    <option value="virginradio.co.uk">virginradio.co.uk</option>
+                                
+                                    <option value="buckinghamshirelive.com">buckinghamshirelive.com</option>
+                                
+                                    <option value="todays-golfer.com">todays-golfer.com</option>
+                                
+                                    <option value="insider.co.uk">insider.co.uk</option>
+                                
+                                    <option value="buzz.ie">buzz.ie</option>
+                                
+                                    <option value="yours.co.uk">yours.co.uk</option>
+                                
+                                    <option value="heatworld.com">heatworld.com</option>
+                                
+                                    <option value="closeronline.co.uk">closeronline.co.uk</option>
+                                
+                                    <option value="takeabreak.co.uk">takeabreak.co.uk</option>
+                                
+                                    <option value="sundaypost.com">sundaypost.com</option>
+                                
+                                    <option value="link.thecourier.co.uk">link.thecourier.co.uk</option>
+                                
+                                    <option value="dreamteamfc.com">dreamteamfc.com</option>
+                                
+                                    <option value="liverpool.com">liverpool.com</option>
+                                
+                                    <option value="motorcyclenews.com">motorcyclenews.com</option>
+                                
+                                    <option value="products.motorcyclenews.com">products.motorcyclenews.com</option>
+                                
+                                    <option value="news.co.uk">news.co.uk</option>
+                                
+                                    <option value="u105.com">u105.com</option>
+                                
+                                    <option value="members.empireonline.com">members.empireonline.com</option>
+                                
+                                    <option value="products.carmagazine.co.uk">products.carmagazine.co.uk</option>
+                                
+                                    <option value="troutandsalmon.com">troutandsalmon.com</option>
+                                
+                                    <option value="members.model-rail.co.uk">members.model-rail.co.uk</option>
+                                
+                                    <option value="fm104.ie">fm104.ie</option>
+                                
+                                    <option value="bellamagazine.co.uk">bellamagazine.co.uk</option>
+                                
+                                    <option value="spiritanddestiny.co.uk">spiritanddestiny.co.uk</option>
+                                
+                                    <option value="mcncompare.com">mcncompare.com</option>
+                                
+                                    <option value="thatslife.co.uk">thatslife.co.uk</option>
+                                
+                                    <option value="model-rail.co.uk">model-rail.co.uk</option>
+                                
+                                    <option value="directory.lincolnshirelive.co.uk">directory.lincolnshirelive.co.uk</option>
+                                
+                                    <option value="tvchoicemagazine.co.uk">tvchoicemagazine.co.uk</option>
+                                
+                                    <option value="cmp.huffingtonpost.co.uk">cmp.huffingtonpost.co.uk</option>
+                                
+                                    <option value="puzzles.takeabreak.co.uk">puzzles.takeabreak.co.uk</option>
+                                
+                                    <option value="link.pressandjournal.co.uk">link.pressandjournal.co.uk</option>
+                                
+                                    <option value="thesunvegas.co.uk">thesunvegas.co.uk</option>
+                                
+                                    <option value="sunbingo.co.uk">sunbingo.co.uk</option>
+                                
+                                    <option value="sundaytimeswineclub.co.uk">sundaytimeswineclub.co.uk</option>
+                                
+                                    <option value="directory.hertfordshiremercury.co.uk">directory.hertfordshiremercury.co.uk</option>
+                                
+                                    <option value="radio.talkradio.co.uk">radio.talkradio.co.uk</option>
+                                
+                                    <option value="classiccarsmagazine.co.uk">classiccarsmagazine.co.uk</option>
+                                
+                                    <option value="games.dreamteamfc.com">games.dreamteamfc.com</option>
+                                
+                                    <option value="fabulousbingo.co.uk">fabulousbingo.co.uk</option>
+                                
+                                    <option value="highline.huffingtonpost.com">highline.huffingtonpost.com</option>
+                                
+                                    <option value="preferences.stylist.co.uk">preferences.stylist.co.uk</option>
+                                
+                                    <option value="embeds.stylist.co.uk">embeds.stylist.co.uk</option>
+                                
+                                    <option value="wireless.radio">wireless.radio</option>
+                                
+                                    <option value="joe.ie">joe.ie</option>
+                                
+                                    <option value="thesundaytimes.co.uk">thesundaytimes.co.uk</option>
+                                
+                                    <option value="the-tls.co.uk">the-tls.co.uk</option>
+                                
+                                    <option value="teamtalk.com">teamtalk.com</option>
+                                
+                                    <option value="eveningtelegraph.co.uk">eveningtelegraph.co.uk</option>
+                                
+                                    <option value="m.lincolnshirelive.co.uk">m.lincolnshirelive.co.uk</option>
+                                
+                                    <option value="planetf1.com">planetf1.com</option>
+                                
+                                    <option value="sportswomenoftheyear.co.uk">sportswomenoftheyear.co.uk</option>
+                                
+                                    <option value="football365.com">football365.com</option>
+                                
+                                    <option value="m.huffingtonpost.co.uk">m.huffingtonpost.co.uk</option>
+                                
+                                    <option value="daveockop.com">daveockop.com</option>
+                                
+                                    <option value="timesradio.wireless.radio">timesradio.wireless.radio</option>
+                                
+                                    <option value="lmfm.ie">lmfm.ie</option>
+                                
+                                    <option value="ruck.co.uk">ruck.co.uk</option>
+                                
+                                    <option value="m.huffpost.com">m.huffpost.com</option>
+                                
+                                    <option value="puzzlemagazines.co.uk">puzzlemagazines.co.uk</option>
+                                
+                                    <option value="fateandfortunemagazine.co.uk">fateandfortunemagazine.co.uk</option>
+                                
+                                    <option value="huffingtonpost.com">huffingtonpost.com</option>
+                                
+                                    <option value="planetrugby.com">planetrugby.com</option>
+                                
+                                    <option value="store.thetimes.ie">store.thetimes.ie</option>
+                                
+                                    <option value="radio.virginradio.co.uk">radio.virginradio.co.uk</option>
+                                
+                                    <option value="members.graziadaily.co.uk">members.graziadaily.co.uk</option>
+                                
+                                    <option value="joe.co.uk">joe.co.uk</option>
+                                
+                                    <option value="members.yours.co.uk">members.yours.co.uk</option>
+                                
+                                    <option value="i2-prod.corkbeo.ie">i2-prod.corkbeo.ie</option>
+                                
+                                    <option value="i2-prod.football.london">i2-prod.football.london</option>
+                                
+                                    <option value="i2-prod.getreading.co.uk">i2-prod.getreading.co.uk</option>
+                                
+                                    <option value="i2-prod.dublinlive.ie">i2-prod.dublinlive.ie</option>
+                                
+                                    <option value="i2-prod.cheshire-live.co.uk">i2-prod.cheshire-live.co.uk</option>
+                                
+                                    <option value="i2-prod.business-live.co.uk">i2-prod.business-live.co.uk</option>
+                                
+                                    <option value="i2-prod.liverpool.com">i2-prod.liverpool.com</option>
+                                
+                                    <option value="live95fm.ie">live95fm.ie</option>
+                                
+                                    <option value="epaper.pressandjournal.co.uk">epaper.pressandjournal.co.uk</option>
+                                
+                                    <option value="newsletters.e.football.london">newsletters.e.football.london</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+              <div id="filter-menu" class="card-header">
+                <div class="row no-gutters">
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'item')"
+                            id="select-item"
+                        >
+                        <option value="">Select a network item</option>
+                        <option value="edge">edge</option>
+                        <option value="node">node</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'property')"
+                            id="select-property"
+                        >
+                        <option value="">Select a property...</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            id="select-value"
+                        >
+                        <option value="">Select value(s)...</option>
+                    </select>
+                  </div>
+                  <div class="col-1 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="highlightFilter(filter);">Filter</button>
+                  </div>
+                  <div class="col-2 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="clearFilter(true)">Reset Selection</button>
+                  </div>
+                </div>
+              </div>
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "440154", "font": {"color": "white"}, "id": "ok.co.uk", "label": "ok.co.uk - Entertainment", "shape": "dot", "size": 60.0, "title": "Entertainment, Mass media, Culture"}, {"color": "440154", "font": {"color": "white"}, "id": "cheshire-live.co.uk", "label": "cheshire-live.co.uk - Public sphere", "shape": "dot", "size": 32.80483021405357, "title": "Public sphere, Issues in ethics, Technology"}, {"color": "440154", "font": {"color": "white"}, "id": "thecourier.co.uk", "label": "thecourier.co.uk - Facebook", "shape": "dot", "size": 29.31525271769584, "title": "Facebook, LinkedIn, Menu (computing)"}, {"color": "440154", "font": {"color": "white"}, "id": "lincolnshirelive.co.uk", "label": "lincolnshirelive.co.uk - Technology", "shape": "dot", "size": 28.27020060517763, "title": "Technology, Public sphere, World Wide Web"}, {"color": "440154", "font": {"color": "white"}, "id": "huffingtonpost.co.uk", "label": "huffingtonpost.co.uk - HuffPost", "shape": "dot", "size": 25.922335537375325, "title": "HuffPost, BuzzFeed, Public sphere"}, {"color": "89D28B", "font": {"color": "white"}, "id": "rsvplive.ie", "label": "rsvplive.ie", "shape": "dot", "size": 25.916732040793455, "title": "Mass media, Icon (computing), Human communication"}, {"color": "89D28B", "font": {"color": "white"}, "id": "dublinlive.ie", "label": "dublinlive.ie", "shape": "dot", "size": 25.217695842205536, "title": "Icon (computing), Public sphere, digital"}, {"color": "89D28B", "font": {"color": "white"}, "id": "corkbeo.ie", "label": "corkbeo.ie", "shape": "dot", "size": 24.043763308304385, "title": "Public sphere, News, Mass media"}, {"color": "89D28B", "font": {"color": "white"}, "id": "cityam.com", "label": "cityam.com", "shape": "dot", "size": 21.6272554073742, "title": "Economy, Public sphere, News"}, {"color": "89D28B", "font": {"color": "white"}, "id": "pressandjournal.co.uk", "label": "pressandjournal.co.uk", "shape": "dot", "size": 21.12013896671523, "title": "Facebook, LinkedIn, Menu (computing)"}, {"color": "89D28B", "font": {"color": "white"}, "id": "sussexlive.co.uk", "label": "sussexlive.co.uk", "shape": "dot", "size": 20.383279166199706, "title": "Sussex, Technology, Public sphere"}, {"color": "89D28B", "font": {"color": "white"}, "id": "carmagazine.co.uk", "label": "carmagazine.co.uk", "shape": "dot", "size": 20.376274795472376, "title": "Automotive industry, Transport, Motor vehicles"}, {"color": "89D28B", "font": {"color": "white"}, "id": "hampshirelive.news", "label": "hampshirelive.news", "shape": "dot", "size": 19.221954499607754, "title": "News, Public sphere, Mass media"}, {"color": "89D28B", "font": {"color": "white"}, "id": "hertfordshiremercury.co.uk", "label": "hertfordshiremercury.co.uk", "shape": "dot", "size": 18.462680712764765, "title": "Hertfordshire, Technology, Public sphere"}, {"color": "89D28B", "font": {"color": "white"}, "id": "empireonline.com", "label": "empireonline.com", "shape": "dot", "size": 16.673764429003697, "title": "Entertainment, Mass media, Film"}, {"color": "89D28B", "font": {"color": "white"}, "id": "business-live.co.uk", "label": "business-live.co.uk", "shape": "dot", "size": 15.669337666704024, "title": "Economy, Business, Technology"}, {"color": "89D28B", "font": {"color": "white"}, "id": "stylist.co.uk", "label": "stylist.co.uk", "shape": "dot", "size": 15.645522806231089, "title": "Health, Culture, Clinical medicine"}, {"color": "89D28B", "font": {"color": "white"}, "id": "getreading.co.uk", "label": "getreading.co.uk", "shape": "dot", "size": 15.257480667936793, "title": "Reading, Berkshire, Technology, Berkshire"}, {"color": "89D28B", "font": {"color": "white"}, "id": "football.london", "label": "football.london", "shape": "dot", "size": 13.439146027120923, "title": "Premier League, Association football, Association football clubs"}, {"color": "89D28B", "font": {"color": "white"}, "id": "bedfordshirelive.co.uk", "label": "bedfordshirelive.co.uk", "shape": "dot", "size": 13.233217527737308, "title": "Technology, Bedfordshire, Politics"}, {"color": "89D28B", "font": {"color": "white"}, "id": "mytimesplus.co.uk", "label": "mytimesplus.co.uk", "shape": "dot", "size": 13.004875042026224, "title": "Distribution (marketing), Movie theater, New media"}, {"color": "89D28B", "font": {"color": "white"}, "id": "huffpost.com", "label": "huffpost.com", "shape": "dot", "size": 12.947439202062087, "title": "HuffPost, News, Journalism"}, {"color": "89D28B", "font": {"color": "white"}, "id": "northantslive.news", "label": "northantslive.news", "shape": "dot", "size": 12.791942171915275, "title": "Technology, Northamptonshire, Computing"}, {"color": "89D28B", "font": {"color": "white"}, "id": "graziadaily.co.uk", "label": "graziadaily.co.uk", "shape": "dot", "size": 12.765325563151407, "title": "Bauer Media Group, Culture, Mass media"}, {"color": "89D28B", "font": {"color": "white"}, "id": "staffordshire-live.co.uk", "label": "staffordshire-live.co.uk", "shape": "dot", "size": 12.604225036422728, "title": "Public sphere, Service industries, Issues in ethics"}, {"color": "89D28B", "font": {"color": "white"}, "id": "driving.co.uk", "label": "driving.co.uk", "shape": "dot", "size": 12.46413762187605, "title": "Vehicles, Car, Transport"}, {"color": "89D28B", "font": {"color": "white"}, "id": "ukholidaysinthesun.co.uk", "label": "ukholidaysinthesun.co.uk", "shape": "dot", "size": 12.034069259217752, "title": "Computer engineering, Mass media technology, Technology"}, {"color": "89D28B", "font": {"color": "white"}, "id": "virginradio.co.uk", "label": "virginradio.co.uk", "shape": "dot", "size": 11.964025551944413, "title": "Entertainment, Mass media, Television shows"}, {"color": "89D28B", "font": {"color": "white"}, "id": "buckinghamshirelive.com", "label": "buckinghamshirelive.com", "shape": "dot", "size": 11.955620307071612, "title": "Buckinghamshire, Issues in ethics, Technology"}, {"color": "89D28B", "font": {"color": "white"}, "id": "todays-golfer.com", "label": "todays-golfer.com", "shape": "dot", "size": 11.879973103216408, "title": "Golf, Bauer Media Group, Precision sports"}, {"color": "89D28B", "font": {"color": "white"}, "id": "insider.co.uk", "label": "insider.co.uk", "shape": "dot", "size": 11.699260338451193, "title": "Economy, Politics, Scotland"}, {"color": "89D28B", "font": {"color": "white"}, "id": "buzz.ie", "label": "buzz.ie", "shape": "dot", "size": 11.200549142665023, "title": "Mass media, Public sphere, Human communication"}, {"color": "89D28B", "font": {"color": "white"}, "id": "yours.co.uk", "label": "yours.co.uk", "shape": "dot", "size": 11.176734282192088, "title": "Bauer Media Group, Entertainment, Mass media"}, {"color": "89D28B", "font": {"color": "white"}, "id": "heatworld.com", "label": "heatworld.com", "shape": "dot", "size": 11.147315925137285, "title": "Mass media, Entertainment, Bauer Media Group"}, {"color": "89D28B", "font": {"color": "white"}, "id": "closeronline.co.uk", "label": "closeronline.co.uk", "shape": "dot", "size": 11.101087078336882, "title": "Entertainment, Mass media, Bauer Media Group"}, {"color": "89D28B", "font": {"color": "white"}, "id": "takeabreak.co.uk", "label": "takeabreak.co.uk", "shape": "dot", "size": 10.916171691135268, "title": "Bauer Media Group, Mass media, Magazine publishing companies of Germany"}, {"color": "89D28B", "font": {"color": "white"}, "id": "sundaypost.com", "label": "sundaypost.com", "shape": "dot", "size": 10.881149837498599, "title": "Facebook, Technology, LinkedIn"}, {"color": "89D28B", "font": {"color": "white"}, "id": "link.thecourier.co.uk", "label": "link.thecourier.co.uk", "shape": "dot", "size": 10.727053681497255, "title": "Computing, Computer networks, World Wide Web"}, {"color": "89D28B", "font": {"color": "white"}, "id": "dreamteamfc.com", "label": "dreamteamfc.com", "shape": "dot", "size": 10.68923007956965, "title": "Complaints organizations, Mass media freedom, Entertainment"}, {"color": "89D28B", "font": {"color": "white"}, "id": "liverpool.com", "label": "liverpool.com", "shape": "dot", "size": 10.62478986887818, "title": "Premier League, Premier League clubs, Liverpool F.C."}, {"color": "89D28B", "font": {"color": "white"}, "id": "motorcyclenews.com", "label": "motorcyclenews.com", "shape": "dot", "size": 10.409055250476298, "title": "Bauer Media Group, Manufactured goods, Motorcycle"}, {"color": "89D28B", "font": {"color": "white"}, "id": "products.motorcyclenews.com", "label": "products.motorcyclenews.com", "shape": "dot", "size": 10.402050879748963, "title": "Bauer Media Group, Motorcycle, Motorcycling"}, {"color": "89D28B", "font": {"color": "white"}, "id": "news.co.uk", "label": "news.co.uk", "shape": "dot", "size": 10.330606298330158, "title": "Journalism, Information Age, Strategic management"}, {"color": "89D28B", "font": {"color": "white"}, "id": "u105.com", "label": "u105.com", "shape": "dot", "size": 10.30398968956629, "title": "Wireless Group, U105, Social issues"}, {"color": "89D28B", "font": {"color": "white"}, "id": "members.empireonline.com", "label": "members.empireonline.com", "shape": "dot", "size": 10.28577832567522, "title": "Bauer Media Group, Mass media, Entertainment"}, {"color": "89D28B", "font": {"color": "white"}, "id": "products.carmagazine.co.uk", "label": "products.carmagazine.co.uk", "shape": "dot", "size": 10.284377451529755, "title": "Bauer Media Group, Car, Technology"}, {"color": "89D28B", "font": {"color": "white"}, "id": "troutandsalmon.com", "label": "troutandsalmon.com", "shape": "dot", "size": 10.282976577384288, "title": "Technology, Projectiles, Shooting sports"}, {"color": "89D28B", "font": {"color": "white"}, "id": "members.model-rail.co.uk", "label": "members.model-rail.co.uk", "shape": "dot", "size": 10.277373080802422, "title": "Financial Conduct Authority, Bauer Media Group, Companies"}, {"color": "89D28B", "font": {"color": "white"}, "id": "fm104.ie", "label": "fm104.ie", "shape": "dot", "size": 10.247954723747618, "title": "Mass media, Entertainment, Clinical medicine"}, {"color": "89D28B", "font": {"color": "white"}, "id": "bellamagazine.co.uk", "label": "bellamagazine.co.uk", "shape": "dot", "size": 10.236747730583884, "title": "Automobile magazines, Car-related mass media, Entertainment"}, {"color": "89D28B", "font": {"color": "white"}, "id": "spiritanddestiny.co.uk", "label": "spiritanddestiny.co.uk", "shape": "dot", "size": 10.204527625238148, "title": "Professional and trade magazines, Mass media companies, Automobile magazines"}, {"color": "89D28B", "font": {"color": "white"}, "id": "mcncompare.com", "label": "mcncompare.com", "shape": "dot", "size": 10.191919757928948, "title": "Technology, Motorcycle, Motorcycling"}, {"color": "89D28B", "font": {"color": "white"}, "id": "thatslife.co.uk", "label": "thatslife.co.uk", "shape": "dot", "size": 10.155497030146812, "title": "Publishing companies of Germany, Entertainment, Communications and media organizations"}, {"color": "89D28B", "font": {"color": "white"}, "id": "model-rail.co.uk", "label": "model-rail.co.uk", "shape": "dot", "size": 10.154096156001344, "title": "Bauer Media Group, Public sphere, Mass media companies established in"}, {"color": "89D28B", "font": {"color": "white"}, "id": "directory.lincolnshirelive.co.uk", "label": "directory.lincolnshirelive.co.uk", "shape": "dot", "size": 10.152695281855879, "title": "Steam locomotive, Traumatology, Manual therapy"}, {"color": "89D28B", "font": {"color": "white"}, "id": "tvchoicemagazine.co.uk", "label": "tvchoicemagazine.co.uk", "shape": "dot", "size": 10.149893533564944, "title": "Entertainment companies, Magazines, Publishing companies"}, {"color": "89D28B", "font": {"color": "white"}, "id": "cmp.huffingtonpost.co.uk", "label": "cmp.huffingtonpost.co.uk", "shape": "dot", "size": 10.145690911128543, "title": "Computer science, Software engineering, Network architecture"}, {"color": "89D28B", "font": {"color": "white"}, "id": "puzzles.takeabreak.co.uk", "label": "puzzles.takeabreak.co.uk", "shape": "dot", "size": 10.13448391796481, "title": "Automobile magazines, Entertainment companies, Publishing companies established in the"}, {"color": "89D28B", "font": {"color": "white"}, "id": "link.pressandjournal.co.uk", "label": "link.pressandjournal.co.uk", "shape": "dot", "size": 10.131682169673876, "title": "Technology, Computer networks, Personal information managers"}, {"color": "89D28B", "font": {"color": "white"}, "id": "thesunvegas.co.uk", "label": "thesunvegas.co.uk", "shape": "dot", "size": 10.130281295528409, "title": "Debit card, United Kingdom, English law"}, {"color": "89D28B", "font": {"color": "white"}, "id": "sunbingo.co.uk", "label": "sunbingo.co.uk", "shape": "dot", "size": 10.128880421382943, "title": "Common law, Privacy, Justice"}, {"color": "89D28B", "font": {"color": "white"}, "id": "sundaytimeswineclub.co.uk", "label": "sundaytimeswineclub.co.uk", "shape": "dot", "size": 10.124677798946543, "title": "Technology, Internet, Internet Explorer"}, {"color": "89D28B", "font": {"color": "white"}, "id": "directory.hertfordshiremercury.co.uk", "label": "directory.hertfordshiremercury.co.uk", "shape": "dot", "size": 10.12187605065561, "title": "Equestrianism, Equestrian facility, Educational institutions"}, {"color": "89D28B", "font": {"color": "white"}, "id": "radio.talkradio.co.uk", "label": "radio.talkradio.co.uk", "shape": "dot", "size": 10.120475176510142, "title": "Multimedia, Visual arts media, Electronics"}, {"color": "89D28B", "font": {"color": "white"}, "id": "classiccarsmagazine.co.uk", "label": "classiccarsmagazine.co.uk", "shape": "dot", "size": 10.116272554073742, "title": "Product introductions, Information appliances, Information technology"}, {"color": "89D28B", "font": {"color": "white"}, "id": "games.dreamteamfc.com", "label": "games.dreamteamfc.com", "shape": "dot", "size": 10.116272554073742, "title": "Association football, Seasons in English football, Seasons in European football"}, {"color": "89D28B", "font": {"color": "white"}, "id": "fabulousbingo.co.uk", "label": "fabulousbingo.co.uk", "shape": "dot", "size": 10.114871679928275, "title": "Issues in ethics, Legal documents, Technology"}, {"color": "89D28B", "font": {"color": "white"}, "id": "highline.huffingtonpost.com", "label": "highline.huffingtonpost.com", "shape": "dot", "size": 10.098061190182674, "title": "Gambling, Beer, Computer"}, {"color": "89D28B", "font": {"color": "white"}, "id": "preferences.stylist.co.uk", "label": "preferences.stylist.co.uk", "shape": "dot", "size": 10.089655945309874, "title": "Mass media, Human communication, Entertainment"}, {"color": "89D28B", "font": {"color": "white"}, "id": "embeds.stylist.co.uk", "label": "embeds.stylist.co.uk", "shape": "dot", "size": 10.088255071164406, "title": "Mass media, Collective intelligence, Computing platforms"}, {"color": "89D28B", "font": {"color": "white"}, "id": "wireless.radio", "label": "wireless.radio", "shape": "dot", "size": 10.08265157458254, "title": "News, Culture, Web 2.0"}, {"color": "89D28B", "font": {"color": "white"}, "id": "joe.ie", "label": "joe.ie", "shape": "dot", "size": 10.08265157458254, "title": "Politics, Digital media, Public records"}, {"color": "89D28B", "font": {"color": "white"}, "id": "thesundaytimes.co.uk", "label": "thesundaytimes.co.uk", "shape": "dot", "size": 10.081250700437073, "title": "England, Talk radio, Tony Blackburn"}, {"color": "89D28B", "font": {"color": "white"}, "id": "the-tls.co.uk", "label": "the-tls.co.uk", "shape": "dot", "size": 10.07844895214614, "title": "Basketball competitions, Student sport, Book review"}, {"color": "89D28B", "font": {"color": "white"}, "id": "teamtalk.com", "label": "teamtalk.com", "shape": "dot", "size": 10.075647203855207, "title": "Jota (footballer, born 1999), Premier League clubs, Association football clubs"}, {"color": "89D28B", "font": {"color": "white"}, "id": "eveningtelegraph.co.uk", "label": "eveningtelegraph.co.uk", "shape": "dot", "size": 10.074246329709739, "title": "Software, Digital media, Information science"}, {"color": "89D28B", "font": {"color": "white"}, "id": "m.lincolnshirelive.co.uk", "label": "m.lincolnshirelive.co.uk", "shape": "dot", "size": 10.072845455564272, "title": "Hypertext Transfer Protocol, Computer-mediated communication, Mass media technology"}, {"color": "89D28B", "font": {"color": "white"}, "id": "planetf1.com", "label": "planetf1.com", "shape": "dot", "size": 10.071444581418806, "title": "Williams Grand Prix Engineering, Michael Schumacher, Motorsport governing bodies"}, {"color": "89D28B", "font": {"color": "white"}, "id": "sportswomenoftheyear.co.uk", "label": "sportswomenoftheyear.co.uk", "shape": "dot", "size": 10.070043707273339, "title": "United Kingdom, Culture, Entertainment"}, {"color": "89D28B", "font": {"color": "white"}, "id": "football365.com", "label": "football365.com", "shape": "dot", "size": 10.070043707273339, "title": "Premier League, Sports organisations of England, Association football records and statistics"}, {"color": "89D28B", "font": {"color": "white"}, "id": "m.huffingtonpost.co.uk", "label": "m.huffingtonpost.co.uk", "shape": "dot", "size": 10.065841084836938, "title": "Asian cuisine, Home, Sauces"}, {"color": "89D28B", "font": {"color": "white"}, "id": "daveockop.com", "label": "daveockop.com", "shape": "dot", "size": 10.063039336546005, "title": "Premier League clubs, Association football seasons, Premier League"}, {"color": "89D28B", "font": {"color": "white"}, "id": "timesradio.wireless.radio", "label": "timesradio.wireless.radio", "shape": "dot", "size": 10.06023758825507, "title": "Russian invasion of Ukraine, Vacuum cleaner, Olaf Scholz"}, {"color": "89D28B", "font": {"color": "white"}, "id": "lmfm.ie", "label": "lmfm.ie", "shape": "dot", "size": 10.056034965818672, "title": "Mass media, Singles, County Meath"}, {"color": "89D28B", "font": {"color": "white"}, "id": "ruck.co.uk", "label": "ruck.co.uk", "shape": "dot", "size": 10.054634091673204, "title": "Football codes, Sports rules and regulations, Rugby union"}, {"color": "89D28B", "font": {"color": "white"}, "id": "m.huffpost.com", "label": "m.huffpost.com", "shape": "dot", "size": 10.054634091673204, "title": "Mass media, Human communication, News"}, {"color": "89D28B", "font": {"color": "white"}, "id": "puzzlemagazines.co.uk", "label": "puzzlemagazines.co.uk", "shape": "dot", "size": 10.051832343382271, "title": "Professional and trade magazines, Broadcasting, Publishing"}, {"color": "89D28B", "font": {"color": "white"}, "id": "fateandfortunemagazine.co.uk", "label": "fateandfortunemagazine.co.uk", "shape": "dot", "size": 10.051832343382271, "title": "Economy of the United Kingdom, Magazines, Radio stations"}, {"color": "89D28B", "font": {"color": "white"}, "id": "huffingtonpost.com", "label": "huffingtonpost.com", "shape": "dot", "size": 10.050431469236804, "title": "Digital media, Information economy, Mass media"}, {"color": "89D28B", "font": {"color": "white"}, "id": "planetrugby.com", "label": "planetrugby.com", "shape": "dot", "size": 10.04342709850947, "title": "Warren Gatland, Rugby union teams, Football"}, {"color": "89D28B", "font": {"color": "white"}, "id": "store.thetimes.ie", "label": "store.thetimes.ie", "shape": "dot", "size": 10.042026224364003, "title": "Communication, Information technology, E-commerce"}, {"color": "89D28B", "font": {"color": "white"}, "id": "radio.virginradio.co.uk", "label": "radio.virginradio.co.uk", "shape": "dot", "size": 10.040625350218537, "title": "Caterpillar, Performing arts, Arts award winners"}, {"color": "89D28B", "font": {"color": "white"}, "id": "members.graziadaily.co.uk", "label": "members.graziadaily.co.uk", "shape": "dot", "size": 10.03922447607307, "title": "Entertainment, Mass media industry, Mass media companies established in"}, {"color": "89D28B", "font": {"color": "white"}, "id": "joe.co.uk", "label": "joe.co.uk", "shape": "dot", "size": 10.032220105345736, "title": "Microsoft Windows, Digital media, Software"}, {"color": "89D28B", "font": {"color": "white"}, "id": "members.yours.co.uk", "label": "members.yours.co.uk", "shape": "dot", "size": 10.016810489745602, "title": "Billericay, Gavin \u0026 Stacey, Choir"}, {"color": "89D28B", "font": {"color": "white"}, "id": "i2-prod.corkbeo.ie", "label": "i2-prod.corkbeo.ie", "shape": "dot", "size": 10.011206993163734, "title": "Email, Network service, Computer-mediated communication"}, {"color": "89D28B", "font": {"color": "white"}, "id": "i2-prod.football.london", "label": "i2-prod.football.london", "shape": "dot", "size": 10.011206993163734, "title": "Internet, Email authentication, Cyberspace"}, {"color": "89D28B", "font": {"color": "white"}, "id": "i2-prod.getreading.co.uk", "label": "i2-prod.getreading.co.uk", "shape": "dot", "size": 10.011206993163734, "title": "Email, Computer-mediated communication, Spam filtering"}, {"color": "89D28B", "font": {"color": "white"}, "id": "i2-prod.dublinlive.ie", "label": "i2-prod.dublinlive.ie", "shape": "dot", "size": 10.011206993163734, "title": "Computer-mediated communication, Email, Internet"}, {"color": "89D28B", "font": {"color": "white"}, "id": "i2-prod.cheshire-live.co.uk", "label": "i2-prod.cheshire-live.co.uk", "shape": "dot", "size": 10.011206993163734, "title": "Email, Cyberspace, Email authentication"}, {"color": "89D28B", "font": {"color": "white"}, "id": "i2-prod.business-live.co.uk", "label": "i2-prod.business-live.co.uk", "shape": "dot", "size": 10.011206993163734, "title": "Internet Standards, Network service, Computer-mediated communication"}, {"color": "89D28B", "font": {"color": "white"}, "id": "i2-prod.liverpool.com", "label": "i2-prod.liverpool.com", "shape": "dot", "size": 10.011206993163734, "title": "Internet, Computer-mediated communication, Cyberspace"}, {"color": "89D28B", "font": {"color": "white"}, "id": "live95fm.ie", "label": "live95fm.ie", "shape": "dot", "size": 10.007004370727334, "title": "World Wide Web, Mass media, Social media"}, {"color": "89D28B", "font": {"color": "white"}, "id": "epaper.pressandjournal.co.uk", "label": "epaper.pressandjournal.co.uk", "shape": "dot", "size": 10.0042026224364, "title": "The Press and Journal"}, {"color": "89D28B", "font": {"color": "white"}, "id": "newsletters.e.football.london", "label": "newsletters.e.football.london", "shape": "dot", "size": 10.001400874145467, "title": "Hostname"}]);
+                  edges = new vis.DataSet([{"color": "8EA8F2", "from": "ok.co.uk", "title": "Association football", "to": "football.london", "value": 464.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Entertainment", "to": "virginradio.co.uk", "value": 436.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Mass media", "to": "rsvplive.ie", "value": 3032.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Culture", "to": "sportswomenoftheyear.co.uk", "value": 11.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Entertainment", "to": "fm104.ie", "value": 74.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Public sphere", "to": "huffingtonpost.co.uk", "value": 1800.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Entertainment", "to": "empireonline.com", "value": 455.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Health", "to": "stylist.co.uk", "value": 837.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Premier League", "to": "liverpool.com", "value": 130.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Entertainment", "to": "yours.co.uk", "value": 195.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Mass media", "to": "heatworld.com", "value": 263.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Sports", "to": "todays-golfer.com", "value": 154.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "News", "to": "huffpost.com", "value": 493.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Culture", "to": "graziadaily.co.uk", "value": 583.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Entertainment", "to": "closeronline.co.uk", "value": 256.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Issues in ethics", "to": "u105.com", "value": 63.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Music industry", "to": "radio.virginradio.co.uk", "value": 8.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Human communication", "to": "preferences.stylist.co.uk", "value": 27.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Newspapers", "to": "the-tls.co.uk", "value": 6.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Association football", "to": "games.dreamteamfc.com", "value": 31.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Gavin \u0026 Stacey", "to": "members.yours.co.uk", "value": 2.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Desert Island Discs", "to": "thesundaytimes.co.uk", "value": 10.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Public sphere", "to": "cheshire-live.co.uk", "value": 2065.5}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Icon (computing)", "to": "dublinlive.ie", "value": 1930.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Formula One", "to": "planetf1.com", "value": 8.0}, {"color": "8EA8F2", "from": "ok.co.uk", "title": "Grass field surfaces", "to": "ruck.co.uk", "value": 9.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Vehicles", "to": "driving.co.uk", "value": 176.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "bedfordshirelive.co.uk", "value": 888.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Economy", "to": "insider.co.uk", "value": 393.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Issues in ethics", "to": "buckinghamshirelive.com", "value": 515.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "getreading.co.uk", "value": 1070.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Public sphere", "to": "hampshirelive.news", "value": 2209.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "carmagazine.co.uk", "value": 356.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Public sphere", "to": "lincolnshirelive.co.uk", "value": 4160.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Public sphere", "to": "corkbeo.ie", "value": 2733.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "thecourier.co.uk", "value": 2720.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Public sphere", "to": "staffordshire-live.co.uk", "value": 706.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "sussexlive.co.uk", "value": 2007.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "hertfordshiremercury.co.uk", "value": 1910.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Public sphere", "to": "huffingtonpost.co.uk", "value": 1920.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Public sphere", "to": "cityam.com", "value": 1391.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Health", "to": "stylist.co.uk", "value": 760.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Business", "to": "business-live.co.uk", "value": 1115.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Facebook", "to": "sundaypost.com", "value": 186.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "pressandjournal.co.uk", "value": 1988.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "todays-golfer.com", "value": 155.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Advertising", "to": "huffpost.com", "value": 460.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Mass media", "to": "live95fm.ie", "value": 2.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Education", "to": "directory.hertfordshiremercury.co.uk", "value": 22.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "northantslive.news", "value": 681.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Issues in ethics", "to": "thesunvegas.co.uk", "value": 32.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Communication design", "to": "embeds.stylist.co.uk", "value": 29.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Food science", "to": "m.huffingtonpost.co.uk", "value": 14.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Technology", "to": "mcncompare.com", "value": 43.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Internet", "to": "sundaytimeswineclub.co.uk", "value": 32.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Issues in ethics", "to": "sunbingo.co.uk", "value": 33.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Computer architecture", "to": "cmp.huffingtonpost.co.uk", "value": 26.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Cyberspace", "to": "link.thecourier.co.uk", "value": 213.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Energy", "to": "directory.lincolnshirelive.co.uk", "value": 20.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Issues in ethics", "to": "fabulousbingo.co.uk", "value": 29.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Poverty", "to": "highline.huffingtonpost.com", "value": 10.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Economy of the United Kingdom", "to": "members.model-rail.co.uk", "value": 38.0}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Cyberspace", "to": "troutandsalmon.com", "value": 52.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Hobbies", "to": "joe.co.uk", "value": 7.5}, {"color": "8EA8F2", "from": "cheshire-live.co.uk", "title": "Imaging", "to": "joe.ie", "value": 17.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Electronics", "to": "store.thetimes.ie", "value": 15.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Technology", "to": "lincolnshirelive.co.uk", "value": 2924.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Facebook", "to": "pressandjournal.co.uk", "value": 2973.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Facebook", "to": "sundaypost.com", "value": 231.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Cyberspace", "to": "ukholidaysinthesun.co.uk", "value": 558.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Mass media", "to": "live95fm.ie", "value": 2.5}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Cyberspace", "to": "u105.com", "value": 65.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "British musical groups", "to": "radio.virginradio.co.uk", "value": 9.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Manufactured goods", "to": "products.motorcyclenews.com", "value": 64.5}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Camera", "to": "link.pressandjournal.co.uk", "value": 45.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Car", "to": "products.carmagazine.co.uk", "value": 45.5}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Cyberspace", "to": "link.thecourier.co.uk", "value": 250.0}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Camera", "to": "eveningtelegraph.co.uk", "value": 26.5}, {"color": "8EA8F2", "from": "thecourier.co.uk", "title": "Computer architecture", "to": "classiccarsmagazine.co.uk", "value": 25.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Public sphere", "to": "dublinlive.ie", "value": 2788.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "bedfordshirelive.co.uk", "value": 813.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Issues in ethics", "to": "buckinghamshirelive.com", "value": 515.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "getreading.co.uk", "value": 1088.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Marketing", "to": "mytimesplus.co.uk", "value": 506.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Public sphere", "to": "hampshirelive.news", "value": 2292.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "carmagazine.co.uk", "value": 350.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Public sphere", "to": "corkbeo.ie", "value": 2684.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Public sphere", "to": "staffordshire-live.co.uk", "value": 668.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "sussexlive.co.uk", "value": 1968.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "hertfordshiremercury.co.uk", "value": 1821.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Public sphere", "to": "huffingtonpost.co.uk", "value": 1833.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Public sphere", "to": "cityam.com", "value": 1310.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "business-live.co.uk", "value": 1144.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Cyberspace", "to": "ukholidaysinthesun.co.uk", "value": 499.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "pressandjournal.co.uk", "value": 2020.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Education", "to": "directory.hertfordshiremercury.co.uk", "value": 21.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Controversies", "to": "dreamteamfc.com", "value": 95.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Marketing", "to": "news.co.uk", "value": 101.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Technology", "to": "northantslive.news", "value": 675.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Communication design", "to": "embeds.stylist.co.uk", "value": 29.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Cyberspace", "to": "u105.com", "value": 66.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Computer architecture", "to": "cmp.huffingtonpost.co.uk", "value": 26.5}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Marketing", "to": "wireless.radio", "value": 26.0}, {"color": "8EA8F2", "from": "lincolnshirelive.co.uk", "title": "Cyberspace", "to": "troutandsalmon.com", "value": 57.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Entertainment", "to": "virginradio.co.uk", "value": 334.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Mass media", "to": "takeabreak.co.uk", "value": 131.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Entertainment", "to": "fm104.ie", "value": 71.5}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Entertainment", "to": "empireonline.com", "value": 408.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Health", "to": "stylist.co.uk", "value": 793.5}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Entertainment", "to": "yours.co.uk", "value": 192.5}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Mass media", "to": "heatworld.com", "value": 195.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "HuffPost", "to": "huffpost.com", "value": 675.5}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "American journalism", "to": "m.huffpost.com", "value": 18.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Culture", "to": "graziadaily.co.uk", "value": 508.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Controversies", "to": "dreamteamfc.com", "value": 86.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Entertainment", "to": "closeronline.co.uk", "value": 193.5}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "The Times", "to": "timesradio.wireless.radio", "value": 8.5}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "American news websites", "to": "huffingtonpost.com", "value": 17.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Food science", "to": "m.huffingtonpost.co.uk", "value": 16.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Journalism", "to": "preferences.stylist.co.uk", "value": 28.0}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "Gavin \u0026 Stacey", "to": "members.yours.co.uk", "value": 3.5}, {"color": "8EA8F2", "from": "huffingtonpost.co.uk", "title": "House of Lords", "to": "thesundaytimes.co.uk", "value": 12.0}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Icon (computing)", "to": "dublinlive.ie", "value": 2820.0}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Entertainment", "to": "virginradio.co.uk", "value": 319.5}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Broadcasting", "to": "mytimesplus.co.uk", "value": 492.5}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Public sphere", "to": "corkbeo.ie", "value": 2436.5}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Mass media", "to": "buzz.ie", "value": 260.0}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Entertainment", "to": "fm104.ie", "value": 65.5}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Entertainment", "to": "empireonline.com", "value": 355.0}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Mass media", "to": "heatworld.com", "value": 195.5}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Mass media", "to": "lmfm.ie", "value": 13.5}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Broadcast journalism", "to": "radio.talkradio.co.uk", "value": 26.0}, {"color": "8EA8F2", "from": "rsvplive.ie", "title": "Rugby union teams", "to": "planetrugby.com", "value": 8.5}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Public sphere", "to": "corkbeo.ie", "value": 2904.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Electronics", "to": "store.thetimes.ie", "value": 14.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Social institutions", "to": "mytimesplus.co.uk", "value": 512.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Mass media", "to": "buzz.ie", "value": 271.5}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Cyberspace", "to": "ukholidaysinthesun.co.uk", "value": 515.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Computer architecture", "to": "m.lincolnshirelive.co.uk", "value": 26.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Mass media", "to": "lmfm.ie", "value": 14.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Computer architecture", "to": "cmp.huffingtonpost.co.uk", "value": 26.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Electronics", "to": "radio.talkradio.co.uk", "value": 24.5}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Computer architecture", "to": "classiccarsmagazine.co.uk", "value": 27.0}, {"color": "8EA8F2", "from": "dublinlive.ie", "title": "Hobbies", "to": "joe.co.uk", "value": 7.5}, {"color": "8EA8F2", "from": "corkbeo.ie", "title": "News", "to": "hampshirelive.news", "value": 1815.5}, {"color": "8EA8F2", "from": "corkbeo.ie", "title": "Public sphere", "to": "staffordshire-live.co.uk", "value": 623.5}, {"color": "8EA8F2", "from": "corkbeo.ie", "title": "Mass media", "to": "buzz.ie", "value": 246.0}, {"color": "8EA8F2", "from": "corkbeo.ie", "title": "Culture", "to": "sportswomenoftheyear.co.uk", "value": 8.5}, {"color": "8EA8F2", "from": "corkbeo.ie", "title": "Technology", "to": "sussexlive.co.uk", "value": 1616.5}, {"color": "8EA8F2", "from": "corkbeo.ie", "title": "Mass media", "to": "lmfm.ie", "value": 9.5}, {"color": "8EA8F2", "from": "corkbeo.ie", "title": "Rugby union teams", "to": "planetrugby.com", "value": 9.5}, {"color": "8EA8F2", "from": "cityam.com", "title": "Economy", "to": "insider.co.uk", "value": 437.5}, {"color": "8EA8F2", "from": "cityam.com", "title": "England", "to": "football.london", "value": 203.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "UEFA Champions League", "to": "teamtalk.com", "value": 24.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "Economy", "to": "business-live.co.uk", "value": 1240.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "Controversies", "to": "dreamteamfc.com", "value": 99.5}, {"color": "8EA8F2", "from": "cityam.com", "title": "Marketing", "to": "news.co.uk", "value": 100.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "Technology", "to": "mcncompare.com", "value": 38.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "Journalism", "to": "preferences.stylist.co.uk", "value": 28.5}, {"color": "8EA8F2", "from": "cityam.com", "title": "Marketing", "to": "wireless.radio", "value": 26.5}, {"color": "8EA8F2", "from": "cityam.com", "title": "Association football", "to": "games.dreamteamfc.com", "value": 27.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "Startup company", "to": "highline.huffingtonpost.com", "value": 12.5}, {"color": "8EA8F2", "from": "cityam.com", "title": "Financial Conduct Authority", "to": "members.model-rail.co.uk", "value": 51.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "The Times", "to": "thesundaytimes.co.uk", "value": 8.5}, {"color": "8EA8F2", "from": "cityam.com", "title": "UEFA Champions League", "to": "daveockop.com", "value": 19.0}, {"color": "8EA8F2", "from": "cityam.com", "title": "Premier League seasons", "to": "football365.com", "value": 18.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Association football", "to": "football.london", "value": 249.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Culture", "to": "sportswomenoftheyear.co.uk", "value": 8.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Premier League", "to": "liverpool.com", "value": 118.0}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Facebook", "to": "sundaypost.com", "value": 219.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Liverpool", "to": "timesradio.wireless.radio", "value": 8.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Camera", "to": "link.pressandjournal.co.uk", "value": 46.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Cyberspace", "to": "link.thecourier.co.uk", "value": 245.0}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Camera", "to": "eveningtelegraph.co.uk", "value": 26.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Retail", "to": "highline.huffingtonpost.com", "value": 10.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "The Press and Journal", "to": "epaper.pressandjournal.co.uk", "value": 1.5}, {"color": "8EA8F2", "from": "pressandjournal.co.uk", "title": "Grass field surfaces", "to": "ruck.co.uk", "value": 9.5}, {"color": "8EA8F2", "from": "sussexlive.co.uk", "title": "Technology", "to": "getreading.co.uk", "value": 1018.5}, {"color": "8EA8F2", "from": "sussexlive.co.uk", "title": "Technology", "to": "hertfordshiremercury.co.uk", "value": 1575.5}, {"color": "8EA8F2", "from": "sussexlive.co.uk", "title": "Technology", "to": "mcncompare.com", "value": 38.5}, {"color": "8EA8F2", "from": "sussexlive.co.uk", "title": "Internet", "to": "sundaytimeswineclub.co.uk", "value": 28.5}, {"color": "8EA8F2", "from": "sussexlive.co.uk", "title": "Steam vehicles", "to": "directory.lincolnshirelive.co.uk", "value": 17.0}, {"color": "8EA8F2", "from": "sussexlive.co.uk", "title": "Companies", "to": "members.model-rail.co.uk", "value": 48.0}, {"color": "8EA8F2", "from": "carmagazine.co.uk", "title": "Car", "to": "driving.co.uk", "value": 651.5}, {"color": "8EA8F2", "from": "carmagazine.co.uk", "title": "Bauer Media Group", "to": "todays-golfer.com", "value": 154.5}, {"color": "8EA8F2", "from": "carmagazine.co.uk", "title": "Bauer Media Group", "to": "products.motorcyclenews.com", "value": 79.0}, {"color": "8EA8F2", "from": "carmagazine.co.uk", "title": "Bauer Media Group", "to": "products.carmagazine.co.uk", "value": 73.5}, {"color": "8EA8F2", "from": "carmagazine.co.uk", "title": "Bauer Media Group", "to": "motorcyclenews.com", "value": 67.0}, {"color": "8EA8F2", "from": "carmagazine.co.uk", "title": "Computer architecture", "to": "classiccarsmagazine.co.uk", "value": 26.5}, {"color": "8EA8F2", "from": "hampshirelive.news", "title": "Communication design", "to": "embeds.stylist.co.uk", "value": 28.5}, {"color": "8EA8F2", "from": "hampshirelive.news", "title": "Western cuisine", "to": "m.huffingtonpost.co.uk", "value": 12.0}, {"color": "8EA8F2", "from": "hampshirelive.news", "title": "Camera", "to": "joe.ie", "value": 18.0}, {"color": "8EA8F2", "from": "hertfordshiremercury.co.uk", "title": "Vehicles", "to": "driving.co.uk", "value": 178.0}, {"color": "8EA8F2", "from": "hertfordshiremercury.co.uk", "title": "Technology", "to": "bedfordshirelive.co.uk", "value": 758.0}, {"color": "8EA8F2", "from": "hertfordshiremercury.co.uk", "title": "Issues in ethics", "to": "buckinghamshirelive.com", "value": 505.0}, {"color": "8EA8F2", "from": "hertfordshiremercury.co.uk", "title": "Technology", "to": "northantslive.news", "value": 647.0}, {"color": "8EA8F2", "from": "hertfordshiremercury.co.uk", "title": "Internet", "to": "sundaytimeswineclub.co.uk", "value": 26.0}, {"color": "8EA8F2", "from": "hertfordshiremercury.co.uk", "title": "International transport", "to": "joe.ie", "value": 22.5}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Bauer Media Group", "to": "takeabreak.co.uk", "value": 160.5}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "tvchoicemagazine.co.uk", "value": 53.5}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "bellamagazine.co.uk", "value": 84.5}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "thatslife.co.uk", "value": 55.5}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "members.graziadaily.co.uk", "value": 14.0}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Bauer Media Group", "to": "members.empireonline.com", "value": 69.0}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Information appliances", "to": "radio.talkradio.co.uk", "value": 26.0}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "fateandfortunemagazine.co.uk", "value": 18.5}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "puzzlemagazines.co.uk", "value": 18.5}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "spiritanddestiny.co.uk", "value": 40.0}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "puzzles.takeabreak.co.uk", "value": 36.0}, {"color": "8EA8F2", "from": "empireonline.com", "title": "Mass media companies of Germany", "to": "model-rail.co.uk", "value": 54.0}, {"color": "8EA8F2", "from": "business-live.co.uk", "title": "Economy", "to": "insider.co.uk", "value": 392.5}, {"color": "8EA8F2", "from": "business-live.co.uk", "title": "Electronics", "to": "store.thetimes.ie", "value": 14.5}, {"color": "8EA8F2", "from": "business-live.co.uk", "title": "Marketing", "to": "news.co.uk", "value": 99.0}, {"color": "8EA8F2", "from": "business-live.co.uk", "title": "Liverpool", "to": "timesradio.wireless.radio", "value": 8.5}, {"color": "8EA8F2", "from": "stylist.co.uk", "title": "Culture", "to": "graziadaily.co.uk", "value": 422.5}, {"color": "8EA8F2", "from": "stylist.co.uk", "title": "Energy", "to": "directory.lincolnshirelive.co.uk", "value": 20.5}, {"color": "8EA8F2", "from": "getreading.co.uk", "title": "Music industry", "to": "radio.virginradio.co.uk", "value": 6.5}, {"color": "8EA8F2", "from": "getreading.co.uk", "title": "Cyberspace", "to": "troutandsalmon.com", "value": 53.5}, {"color": "8EA8F2", "from": "football.london", "title": "Association football league seasons", "to": "teamtalk.com", "value": 25.0}, {"color": "8EA8F2", "from": "football.london", "title": "Premier League", "to": "liverpool.com", "value": 184.5}, {"color": "8EA8F2", "from": "football.london", "title": "Association football", "to": "games.dreamteamfc.com", "value": 28.0}, {"color": "8EA8F2", "from": "football.london", "title": "Association football league seasons", "to": "daveockop.com", "value": 22.0}, {"color": "8EA8F2", "from": "football.london", "title": "Association football league seasons", "to": "football365.com", "value": 23.5}, {"color": "8EA8F2", "from": "bedfordshirelive.co.uk", "title": "Computer architecture", "to": "m.lincolnshirelive.co.uk", "value": 26.0}, {"color": "8EA8F2", "from": "huffpost.com", "title": "American journalism", "to": "m.huffpost.com", "value": 19.5}, {"color": "8EA8F2", "from": "huffpost.com", "title": "American news websites", "to": "huffingtonpost.com", "value": 18.0}, {"color": "8EA8F2", "from": "northantslive.news", "title": "Grand Prix motor racing", "to": "planetf1.com", "value": 20.0}, {"color": "8EA8F2", "from": "graziadaily.co.uk", "title": "Bauer Media Group", "to": "takeabreak.co.uk", "value": 123.5}, {"color": "8EA8F2", "from": "graziadaily.co.uk", "title": "Bauer Media Group", "to": "yours.co.uk", "value": 176.0}, {"color": "8EA8F2", "from": "graziadaily.co.uk", "title": "Entertainment", "to": "closeronline.co.uk", "value": 191.5}, {"color": "8EA8F2", "from": "graziadaily.co.uk", "title": "Bauer Media Group", "to": "members.empireonline.com", "value": 36.0}, {"color": "8EA8F2", "from": "graziadaily.co.uk", "title": "Mass media companies of Germany", "to": "spiritanddestiny.co.uk", "value": 46.0}, {"color": "8EA8F2", "from": "staffordshire-live.co.uk", "title": "Education", "to": "directory.hertfordshiremercury.co.uk", "value": 21.0}, {"color": "8EA8F2", "from": "driving.co.uk", "title": "Car", "to": "products.carmagazine.co.uk", "value": 45.5}, {"color": "8EA8F2", "from": "driving.co.uk", "title": "Grand Prix motor racing", "to": "planetf1.com", "value": 15.0}, {"color": "8EA8F2", "from": "virginradio.co.uk", "title": "Opera", "to": "the-tls.co.uk", "value": 5.5}, {"color": "8EA8F2", "from": "buckinghamshirelive.com", "title": "Computer architecture", "to": "m.lincolnshirelive.co.uk", "value": 26.0}, {"color": "8EA8F2", "from": "todays-golfer.com", "title": "Bauer Media Group", "to": "products.motorcyclenews.com", "value": 73.5}, {"color": "8EA8F2", "from": "todays-golfer.com", "title": "Bauer Media Group", "to": "motorcyclenews.com", "value": 60.5}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Mass media companies of Germany", "to": "tvchoicemagazine.co.uk", "value": 53.5}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Bauer Media Group", "to": "bellamagazine.co.uk", "value": 72.0}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Mass media companies of Germany", "to": "thatslife.co.uk", "value": 55.5}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Bauer Media Group", "to": "members.empireonline.com", "value": 34.5}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Bauer Media Group", "to": "motorcyclenews.com", "value": 60.0}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Mass media companies of Germany", "to": "spiritanddestiny.co.uk", "value": 33.0}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Mass media companies of Germany", "to": "puzzles.takeabreak.co.uk", "value": 35.5}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Gavin \u0026 Stacey", "to": "members.yours.co.uk", "value": 2.5}, {"color": "8EA8F2", "from": "yours.co.uk", "title": "Mass media companies of Germany", "to": "model-rail.co.uk", "value": 54.0}, {"color": "8EA8F2", "from": "heatworld.com", "title": "British non-fiction literature", "to": "the-tls.co.uk", "value": 8.5}, {"color": "8EA8F2", "from": "takeabreak.co.uk", "title": "Mass media companies of Germany", "to": "bellamagazine.co.uk", "value": 84.0}, {"color": "8EA8F2", "from": "takeabreak.co.uk", "title": "Mass media companies of Germany", "to": "thatslife.co.uk", "value": 53.5}, {"color": "8EA8F2", "from": "takeabreak.co.uk", "title": "Mass media companies of Germany", "to": "members.graziadaily.co.uk", "value": 14.0}, {"color": "8EA8F2", "from": "sundaypost.com", "title": "Mass media", "to": "live95fm.ie", "value": 2.5}, {"color": "8EA8F2", "from": "sundaypost.com", "title": "Camera", "to": "link.pressandjournal.co.uk", "value": 42.5}, {"color": "8EA8F2", "from": "sundaypost.com", "title": "Camera", "to": "eveningtelegraph.co.uk", "value": 26.5}, {"color": "8EA8F2", "from": "liverpool.com", "title": "UEFA Champions League", "to": "teamtalk.com", "value": 20.5}, {"color": "8EA8F2", "from": "liverpool.com", "title": "UEFA Champions League", "to": "daveockop.com", "value": 20.0}, {"color": "8EA8F2", "from": "liverpool.com", "title": "Premier League seasons", "to": "football365.com", "value": 16.5}, {"color": "8EA8F2", "from": "news.co.uk", "title": "Marketing", "to": "wireless.radio", "value": 29.5}, {"color": "8EA8F2", "from": "bellamagazine.co.uk", "title": "Mass media companies of Germany", "to": "fateandfortunemagazine.co.uk", "value": 18.5}, {"color": "8EA8F2", "from": "bellamagazine.co.uk", "title": "Mass media companies of Germany", "to": "puzzlemagazines.co.uk", "value": 18.5}, {"color": "8EA8F2", "from": "bellamagazine.co.uk", "title": "Mass media companies of Germany", "to": "model-rail.co.uk", "value": 53.0}, {"color": "8EA8F2", "from": "thatslife.co.uk", "title": "Mass media companies of Germany", "to": "tvchoicemagazine.co.uk", "value": 53.5}, {"color": "8EA8F2", "from": "model-rail.co.uk", "title": "Mass media companies of Germany", "to": "puzzles.takeabreak.co.uk", "value": 36.0}, {"color": "8EA8F2", "from": "tvchoicemagazine.co.uk", "title": "Mass media companies of Germany", "to": "members.graziadaily.co.uk", "value": 14.0}, {"color": "8EA8F2", "from": "tvchoicemagazine.co.uk", "title": "Mass media companies of Germany", "to": "fateandfortunemagazine.co.uk", "value": 18.5}, {"color": "8EA8F2", "from": "tvchoicemagazine.co.uk", "title": "Mass media companies of Germany", "to": "puzzlemagazines.co.uk", "value": 18.5}, {"color": "8EA8F2", "from": "link.pressandjournal.co.uk", "title": "The Press and Journal", "to": "epaper.pressandjournal.co.uk", "value": 1.0}, {"color": "8EA8F2", "from": "thesunvegas.co.uk", "title": "Issues in ethics", "to": "sunbingo.co.uk", "value": 39.5}, {"color": "8EA8F2", "from": "thesunvegas.co.uk", "title": "Issues in ethics", "to": "fabulousbingo.co.uk", "value": 37.0}, {"color": "8EA8F2", "from": "sunbingo.co.uk", "title": "Issues in ethics", "to": "fabulousbingo.co.uk", "value": 36.0}, {"color": "8EA8F2", "from": "joe.ie", "title": "Imaging", "to": "joe.co.uk", "value": 11.0}, {"color": "8EA8F2", "from": "ruck.co.uk", "title": "Rugby union teams", "to": "planetrugby.com", "value": 8.5}, {"color": "8EA8F2", "from": "m.huffpost.com", "title": "American news websites", "to": "huffingtonpost.com", "value": 18.0}, {"color": "8EA8F2", "from": "i2-prod.corkbeo.ie", "title": "Email authentication", "to": "i2-prod.football.london", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.corkbeo.ie", "title": "Email authentication", "to": "i2-prod.cheshire-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.corkbeo.ie", "title": "Email authentication", "to": "i2-prod.business-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.football.london", "title": "Email authentication", "to": "i2-prod.cheshire-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.football.london", "title": "Email authentication", "to": "i2-prod.business-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.football.london", "title": "Email authentication", "to": "i2-prod.dublinlive.ie", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.football.london", "title": "Email authentication", "to": "i2-prod.liverpool.com", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.football.london", "title": "Email authentication", "to": "i2-prod.getreading.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.getreading.co.uk", "title": "Email authentication", "to": "i2-prod.cheshire-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.getreading.co.uk", "title": "Email authentication", "to": "i2-prod.business-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.dublinlive.ie", "title": "Email authentication", "to": "i2-prod.cheshire-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.dublinlive.ie", "title": "Email authentication", "to": "i2-prod.business-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.cheshire-live.co.uk", "title": "Email authentication", "to": "i2-prod.business-live.co.uk", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.cheshire-live.co.uk", "title": "Email authentication", "to": "i2-prod.liverpool.com", "value": 4.0}, {"color": "8EA8F2", "from": "i2-prod.business-live.co.uk", "title": "Email authentication", "to": "i2-prod.liverpool.com", "value": 4.0}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"nodes": {"borderWidth": null, "borderWidthSelected": null, "opacity": 0.9, "scaling": {"label": {"enabled": true, "min": 21, "max": 30, "maxVisible": 35, "drawThreshold": 1}}, "size": null}, "edges": {"color": {"inherit": true}}, "interaction": {"hover": true}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
